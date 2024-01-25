@@ -7,5 +7,5 @@ echo "Use your GitHub username and paste your GitHub token as the password."
 docker login ghcr.io || exit 2
 
 # push the package to the GitHub Container Repository
-docker commit ajna-testnet ghcr.io/ajna-finance/ajna-testnet:${tag} || exit 3
-docker push ghcr.io/ajna-finance/ajna-testnet:${tag}
+docker commit ajna-testnet ghcr.io/builtbymom/ajna-testnet:${tag} || exit 3
+docker push ghcr.io/builtbymom/ajna-testnet:${tag}
