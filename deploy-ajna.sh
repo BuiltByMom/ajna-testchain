@@ -25,17 +25,18 @@ regex_poolinfoutils_address=".*PoolInfoUtils[[:space:]]+([0-9xa-fA-F]+)*."
 regex_multicallutils_address=".*PoolInfoUtilsMulticall[[:space:]]+([0-9xa-fA-F]+)*."
 regex_positionmanager_address=".*PositionManager[[:space:]]+([0-9xa-fA-F]+)*."
 regex_tokensfactory_address=".*TokensFactory[[:space:]]+deployed[[:space:]]+to[[:space:]]+([0-9xa-fA-F]+)*."
+regex_lenderhelper_address=".*Deployed[[:space:]]+to[[:space:]]+([0-9xa-fA-F]+)*."
 
 # Test to ensure user cloned repositories into expected locations.
-pushd ../ecosystem-coordination && popd || fail
-pushd ../contracts && popd || fail
+pushd ../ajna-grants && popd || fail
+pushd ../ajna-core && popd || fail
 pushd ../tokens-factory && popd || fail
 
 # "forge script" cannot use the forked AJNA token, so deploy a new one to the fork
-pushd ../ecosystem-coordination
+pushd ../ajna-grants
 export MINT_TO_ADDRESS=${DEPLOY_ADDRESS}
 deploy_cmd="forge script script/AjnaToken.s.sol:DeployAjnaToken \
-		    --rpc-url ${ETH_RPC_URL} --sender ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+		    --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
 output=$(${deploy_cmd})
 if [[ $output =~ $regex_ajna_token_address ]]
 then
@@ -50,10 +51,11 @@ cast send ${AJNA_TOKEN} "burn(uint256)" 1000000000ether --from $DEPLOY_ADDRESS -
 
 # deploy BurnWrapper
 # modify source to set correct AJNA_TOKEN address
-sed -i -E "s#(AJNA_TOKEN_ADDRESS = )0x[0-9A-Fa-f]+#\1${AJNA_TOKEN}#" src/token/BurnWrapper.sol || fail
+sed -i "" -E "s#(AJNA_TOKEN_ADDRESS = )0x[0-9A-Fa-f]+#\1${AJNA_TOKEN}#" src/token/BurnWrapper.sol || fail
 deploy_cmd="forge script script/BurnWrapper.s.sol:DeployBurnWrapper \
-		    --rpc-url ${ETH_RPC_URL} --sender ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+		    --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
 output=$(${deploy_cmd})
+
 if [[ $output =~ $regex_burnwrapper_address ]]
 then
     export BURNWRAPPER=${BASH_REMATCH[1]}
@@ -65,7 +67,7 @@ fi
 
 # deploy GrantFund
 deploy_cmd="forge script script/GrantFund.s.sol:DeployGrantFund \
-	            --rpc-url ${ETH_RPC_URL} --sender ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+	            --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
 output=$(${deploy_cmd})
 if [[ $output =~ $regex_grantfund_address ]]
 then
@@ -81,11 +83,12 @@ cast send ${AJNA_TOKEN} "approve(address,uint256)" ${GRANTFUND} 300000000ether -
 cast send ${GRANTFUND} "fundTreasury(uint256)" 300000000ether --from $DEPLOY_ADDRESS --private-key $DEPLOY_RAWKEY > /dev/null
 popd
 
-# deploy everything in the contracts repository
-pushd ../contracts
+# deploy everything in the ajna-core repository
+pushd ../ajna-core
 deploy_cmd="forge script ./script/deploy.s.sol \
-		    --rpc-url ${ETH_RPC_URL} --sender ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+		    --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
 output=$(${deploy_cmd})
+
 if [[ $output =~ $regex_erc20_factory_address ]]
 then
     export ERC20FACTORY=${BASH_REMATCH[1]}
@@ -131,7 +134,7 @@ popd
 # deploy test token factory
 pushd ../tokens-factory
 deploy_cmd="forge script script/DeployTokensFactory.s.sol:DeployTokensFactory \
-            --rpc-url ${ETH_RPC_URL} --sender ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+            --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
 output=$(${deploy_cmd})
 if [[ $output =~ $regex_tokensfactory_address ]]
 then
@@ -139,6 +142,21 @@ then
 else
     echo "$output"
     echo Could not determine TokensFactory address.
+    popd && fail
+fi
+popd
+
+# deploy lender helper
+pushd ../ajna-wrapper
+deploy_cmd="forge script script/deploy.s.sol \
+            --rpc-url ${ETH_RPC_URL} --froms ${DEPLOY_ADDRESS} --private-key ${DEPLOY_RAWKEY} --broadcast -vvv"
+output=$(${deploy_cmd})
+if [[ $output =~ $regex_lenderhelper_address ]]
+then
+    export LENDERHELPER=${BASH_REMATCH[1]}
+else
+    echo "$output"
+    echo Could not determine LenderHelper address.
     popd && fail
 fi
 popd
@@ -154,3 +172,22 @@ echo "PoolInfoUtils          ${POOLINFOUTILS}"
 echo "PoolInfoUtilsMulticall ${MULTICALLUTILS}"
 echo "PositionManager        ${POSITIONMANAGER}"
 echo "TokensFactory          ${TOKENSFACTORY}"
+echo "LenderHelper          ${LENDERHELPER}"
+
+# Define the output file name
+output_file="ganache.json"
+
+# Write the variables to the output file in JSON format
+echo "{" > "$output_file"
+echo '  "AJNA token": "'${AJNA_TOKEN}'", ' >> "$output_file"
+echo '  "GrantFund": "'${GRANTFUND}'", ' >> "$output_file"
+echo '  "ERC20 factory": "'${ERC20FACTORY}'", ' >> "$output_file"
+echo '  "ERC721 factory": "'${ERC721FACTORY}'", ' >> "$output_file"
+echo '  "PoolInfoUtils": "'${POOLINFOUTILS}'", ' >> "$output_file"
+echo '  "PoolInfoUtilsMulticall": "'${MULTICALLUTILS}'", ' >> "$output_file"
+echo '  "PositionManager": "'${POSITIONMANAGER}'", ' >> "$output_file"
+echo '  "TokensFactory": "'${TOKENSFACTORY}'", ' >> "$output_file"
+echo '  "LenderHelper": "'${LENDERHELPER}'"' >> "$output_file"
+echo "}" >> "$output_file"
+
+echo "Variables have been written to $output_file."

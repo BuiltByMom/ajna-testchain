@@ -22,7 +22,7 @@ function fail {
 
 regex_pool_bytes='"data":"0x0{24}([0-9a-fA-F]+)'${ERC20_NON_SUBSET_HASH}
 
-pushd ../contracts > /dev/null
+pushd ../ajna-core > /dev/null
 if [[ -z ${ERC20FACTORY} ]]; then fail "please set ERC20FACTORY address"; fi
 
 cmd="cast send ${ERC20FACTORY} deployPool(address,address,uint256) 

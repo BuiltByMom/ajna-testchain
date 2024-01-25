@@ -3,14 +3,14 @@ The purpose of this project is to set up a local testchain for testing Ajna depl
 
 ## Prerequisites ##
 * `docker` and `compose` plugin (or `docker-compose` package)
-* `foundry` tools (installation documented in `contracts` repository)
+* `foundry` tools (installation documented in `ajna-core` repository)
 * `bc` and `jq` tools
 
 ## Setup ##
 
 Clone the following Ajna GitHub repositories.  Either check them out in the same location you cloned this `testchain` repository, or establish symlinks as needed.
-- https://github.com/ajna-finance/contracts
-- https://github.com/ajna-finance/ecosystem-coordination
+- https://github.com/ajna-finance/ajna-core
+- https://github.com/ajna-finance/ajna-grants
 - https://github.com/ajna-finance/tokens-factory
 
 In each repository, switch to whichever branch is appropriate for the testchain, and `make build`.
@@ -103,6 +103,7 @@ PoolInfoUtils          0x6c5c7fD98415168ada1930d44447790959097482
 PoolInfoUtilsMulticall 0x6548dF23A854f72335902e58a1e59B50bb3f11F1
 PositionManager        0xdF7403003a16c49ebA5883bB5890d474794cea5a
 TokensFactory          0x9a56e5e70373E4965AAAFB994CB58eDC577031D7
+LenderHelper           0x73c8605EDE83C7CfB148e7190375350019043Ff7
 ```
 
 ### Create test tokens and pools ###

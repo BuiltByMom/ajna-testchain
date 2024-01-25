@@ -22,7 +22,7 @@ function fail {
 
 regex_pool_bytes='"data":"0x0{24}([0-9a-fA-F]{40})'
 
-pushd ../contracts > /dev/null
+pushd ../ajna-core > /dev/null
 if [[ -z ${ERC721FACTORY} ]]; then fail "please set ERC721FACTORY address"; fi
 
 cmd="cast send ${ERC721FACTORY} deployPool(address,address,uint256[],uint256) 
